@@ -76,7 +76,6 @@ int uploadBuffer(session login, const char* buffer, long length){
                "\r\n"+
                
                body;
-    Serial.print(request);
     client.print(request);
     String line= "";
     String control = "p";
@@ -88,8 +87,6 @@ int uploadBuffer(session login, const char* buffer, long length){
 	    }
 	}
     client.read();
-    Serial.println();
-    Serial.println(line);
 	return getStatusCode(line);
 }
 
