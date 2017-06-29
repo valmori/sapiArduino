@@ -13,4 +13,7 @@ typedef struct{
 }session;
 
 int doLogin(const char* username, const char* password, session* login);
+
+int uploadBuffer(session login, const char* buffer, long length);
+
 #endif
