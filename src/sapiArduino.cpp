@@ -54,8 +54,6 @@ int doLogin(const char* username, const char* password, session* login){
   return getStatusCode(line);
 }
 
-//promemoria: nel buffer ci mettiamo la stringa che ottengo da una funzione che mi crea la "data,peso" non posso passare il multipart perché mi server il
-//boundary che non ha senso generare fuori perché servo solo per l'upload, la lunghezza si potrebbe togliere
 int uploadBuffer(session login, const char* buffer, long length){
 	
 	FileInfo file = {"weight.csv", "text/plain", buffer, length};
@@ -71,7 +69,7 @@ int uploadBuffer(session login, const char* buffer, long length){
 	String body = buildMultipart(boundary,file); 
  	String request = String("POST ") + url + " HTTP/1.1\r\n" + //rfc http 1.1
                "Host: " + host + "\r\n" +    
-               "JSESSIONID: " + login.jsonid + 
+               "Cookie: JSESSIONID=" + login.jsonid + "\r\n" + 
                "Content-Type: multipart/form-data;boundary=" + boundary + "\r\n" +
                "Content-Length: " + body.length() + "\r\n" +
                "Connection: close" + "\r\n" +
@@ -82,7 +80,7 @@ int uploadBuffer(session login, const char* buffer, long length){
     client.print(request);
     String line= "";
     String control = "p";
-    while (client.connected()||(control!=line)) {
+    while ((control!=line)) {
 	    control = line;
 	    line += client.readStringUntil('\n');
 	    if (line == "\r") {
@@ -90,6 +88,8 @@ int uploadBuffer(session login, const char* buffer, long length){
 	    }
 	}
     client.read();
+    Serial.println();
+    Serial.println(line);
 	return getStatusCode(line);
 }
 
@@ -147,14 +147,14 @@ String buildMultipart(String boundary, FileInfo info){
 						"\"modificationdate\": 20170629" + "," +
 						"\"contenttype\":\"text/plain\"," +
 						"\"size\":" + info.length + "," + 
-						"\"folderid\":1" +
+						"\"folderid\":-1" +
 				    "}" +
-				"}\r\n";
+				"}\r\n" +
               
-              "--" + boundary +
+              "--" + boundary + "\r\n" +
               "Content-Disposition: form-data; name=\"file\"; filename=\"" + info.name + "\"\r\n" +
 			  "Content-Type: \"" + info.type + "\"\r\n\r\n" +
-			  info.content + "\r\n\r\n" +
+			  info.content + "\r\n" +
               "--" + boundary + "--";
   return multipart;
 }
