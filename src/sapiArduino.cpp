@@ -4,14 +4,7 @@
 #include <string.h>
 #include <sapiArduino.h>
 
-typedef struct{
-	String name;
-	String type;
-	const char* content;
-	long length;
-	
-	
-}FileInfo;
+
 
 static String createCred(const char* id, const char* pass);
 static String getJsessionid(String line);
@@ -19,9 +12,9 @@ static String getValidationkey(String line);
 static int getStatusCode(String line);
 static String buildMultipart(String boundary, FileInfo info);
 
-//do the login at onemediahub.com, get the jsessionid, validationkey and returns a number code 0, if the login is happened successfully, 1 failed to stabiliz connetion with the host
+//do the login at onemediahub.com, get the jSessionid, validationkey and returns a number code 0, if the login is happened successfully, 1 failed to stabiliz connetion with the host
 //2 username or password is wrong, 3 anexatly error in response from server
-int doLogin(const char* username, const char* password, session* login){
+int doLogin(const char* username, const char* password, Session* login){
 	WiFiClientSecure client;
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
@@ -54,10 +47,12 @@ int doLogin(const char* username, const char* password, session* login){
   return getStatusCode(line);
 }
 
-int uploadBuffer(session login, const char* buffer, long length){
-	
-	FileInfo file = {"weight.csv", "text/plain", buffer, length};
-	
+int uploadBuffer(Session login, const char* buffer, long length){	
+	FileInfo file = {"NoName.txt", "text/plain", buffer, length};	
+	return uploadFile(login, file);
+}
+
+int uploadFile(Session login, FileInfo file){
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	WiFiClientSecure client;
@@ -140,8 +135,8 @@ String buildMultipart(String boundary, FileInfo info){
 				"{" +
 				    "\"data\":{" + 
 						"\"name\": \"" + info.name + "\"," +
-						"\"creationdate\": 20170629" + "," +
-						"\"modificationdate\": 20170629" + "," +
+						"\"creationdate\": "+ info.date + "," +
+						"\"modificationdate\": "+ info.date + "," +
 						"\"contenttype\":\"text/plain\"," +
 						"\"size\":" + info.length + "," + 
 						"\"folderid\":-1" +
@@ -154,4 +149,38 @@ String buildMultipart(String boundary, FileInfo info){
 			  info.content + "\r\n" +
               "--" + boundary + "--";
   return multipart;
+}
+
+
+String Timer(){
+	
+   dateTime=NTPch.getNTPtime(1.0, 1);
+   NTPch.printDateTime(dateTime);
+   byte actualHour = dateTime.hour;
+   byte actualMinute = dateTime.minute;
+   byte actualsecond = dateTime.second;
+   int actualyear = dateTime.year;
+   byte actualMonth = dateTime.month;
+   byte actualday =dateTime.day;
+   String date="";
+   date = date + String(actualHour)+ String(actualMinute) + String(actualsecond) + String(actualyear) + String(actualMonth) + String(actualday);
+   return date;
+
+}
+
+void SaveData(String date,String weight){
+  int addr=0,addd;
+  int i=0;
+  EEPROM.commit();
+  for (addr=0;addr<date.length();addr++) {
+    EEPROM.write(addr,date[addr]);  
+    Serial.print(date[addr]);
+  }
+  for(addd=addr;addd<weight.length()+addr;addd++){
+    EEPROM.write(addd,weight[i]);    
+    Serial.print(weight[i]);
+    i++;
+  }
+  Serial.println();
+  EEPROM.end();
 }

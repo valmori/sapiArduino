@@ -10,10 +10,23 @@
 typedef struct{
   String key;
   String jsonid;
-}session;
+} Session;
 
-int doLogin(const char* username, const char* password, session* login);
+typedef struct{
+	String name;
+	String type;
+	const char* content;
+	long length;	
+	String date;
+} FileInfo;
 
-int uploadBuffer(session login, const char* buffer, long length);
+int doLogin(const char* username, const char* password, Session* login);
 
+int uploadBuffer(Session login, const char* buffer, long length);
+
+String buildMultipart(String boundary, FileInfo info);
+
+String Timer();
+
+void SaveData(String date,String weight);
 #endif
