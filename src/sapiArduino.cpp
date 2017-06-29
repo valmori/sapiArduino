@@ -150,37 +150,3 @@ String buildMultipart(String boundary, FileInfo info){
               "--" + boundary + "--";
   return multipart;
 }
-
-
-String Timer(){
-	
-   dateTime=NTPch.getNTPtime(1.0, 1);
-   NTPch.printDateTime(dateTime);
-   byte actualHour = dateTime.hour;
-   byte actualMinute = dateTime.minute;
-   byte actualsecond = dateTime.second;
-   int actualyear = dateTime.year;
-   byte actualMonth = dateTime.month;
-   byte actualday =dateTime.day;
-   String date="";
-   date = date + String(actualHour)+ String(actualMinute) + String(actualsecond) + String(actualyear) + String(actualMonth) + String(actualday);
-   return date;
-
-}
-
-void SaveData(String date,String weight){
-  int addr=0,addd;
-  int i=0;
-  EEPROM.commit();
-  for (addr=0;addr<date.length();addr++) {
-    EEPROM.write(addr,date[addr]);  
-    Serial.print(date[addr]);
-  }
-  for(addd=addr;addd<weight.length()+addr;addd++){
-    EEPROM.write(addd,weight[i]);    
-    Serial.print(weight[i]);
-    i++;
-  }
-  Serial.println();
-  EEPROM.end();
-}

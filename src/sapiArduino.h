@@ -24,9 +24,6 @@ int doLogin(const char* username, const char* password, Session* login);
 
 int uploadBuffer(Session login, const char* buffer, long length);
 
-String buildMultipart(String boundary, FileInfo info);
+int uploadFile(Session login, FileInfo file);
 
-String Timer();
-
-void SaveData(String date,String weight);
 #endif
