@@ -11,6 +11,10 @@ static String getJsessionid(String line);
 static String getValidationkey(String line);
 static int getStatusCode(String line);
 static String buildMultipart(String boundary, FileInfo info);
+static String createMetadata(FileInfo info);
+static String getId(String line);
+String sendMetadata(Session login, FileInfo file);
+int saveFile(Session log, FileInfo file, String Id);
 
 //do the login at onemediahub.com, get the jSessionid, validationkey and returns a number code 0, if the login is happened successfully, 1 failed to stabiliz connetion with the host
 //2 username or password is wrong, 3 anexatly error in response from server
@@ -19,7 +23,7 @@ int doLogin(const char* username, const char* password, Session* login){
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	if(!client.connect(host, httpsPort)){
-	return WiFi_OFF;
+		return WiFi_NOT_CONNECTED;
 	}
 	String user = createCred(username, password);
 	String url = "/sapi/login?action=login";
@@ -44,6 +48,12 @@ int doLogin(const char* username, const char* password, Session* login){
   client.read();
   login->jsonid = getJsessionid(line);
   login->key = getValidationkey(line);
+  if(login->jsonid == NULL){
+  	return JSESSIONID_MISS;
+  }
+  if(login->key == NULL){
+  	return AUTENTICATION_KEY_NOT_FOUND;
+  }
   return getStatusCode(line);
 }
 
@@ -57,11 +67,12 @@ int uploadFile(Session login, FileInfo file){
 	const int httpsPort = 443;
 	WiFiClientSecure client;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_OFF;
+		return WiFi_NOT_CONNECTED;
 	}	
 	String url = "/sapi/upload?action=save&validationkey=" + login.key;
 	String boundary = "46w9f0apovnw23951faydgi";
 	String body = buildMultipart(boundary,file); 
+	//perché non fare una funzione per la request?
  	String request = String("POST ") + url + " HTTP/1.1\r\n" + //rfc http 1.1
                "Host: " + host + "\r\n" +    
                "Cookie: JSESSIONID=" + login.jsonid + "\r\n" + 
@@ -84,7 +95,16 @@ int uploadFile(Session login, FileInfo file){
     client.read();
 	return getStatusCode(line);
 }
-
+/*
+int resumableUploadFile(Session login, FileInfo file){  
+	int statusCode;
+	String Id = sentMetadata(login, file);
+	if (Id != NULL){
+		statusCode = saveFile(login, file, Id);
+	}
+	return statusCode;
+}
+*/
 //create the login=username&password=account-infomation
 static String createCred(const char* id, const char* pass){
   String login="login=";
@@ -119,7 +139,7 @@ int getStatusCode(String line){
 			return LOGIN_OK;
 		break;
 		case 401:
-			return LOGIN_WRONG;
+			return AUTENTICATION_FAILED;
 		break;
 		default:
 			return GENERIC_ERROR;
@@ -127,17 +147,16 @@ int getStatusCode(String line){
 	}	
 }
 
-
 String buildMultipart(String boundary, FileInfo info){
 	String multipart;
 	multipart += "--" + boundary + "\r\n" +
 				"Content-Disposition: form-data; name=\"data\"\r\n\r\n" +	
 				"{" +
 				    "\"data\":{" + 
-						"\"name\": \"" + info.name + "\"," +
-						"\"creationdate\": "+ info.date + "," +
-						"\"modificationdate\": "+ info.date + "," +
-						"\"contenttype\":\"text/plain\"," +
+						"\"name\":\"" + info.name + "\"," +
+						"\"creationdate\":\""+ info.date + "\"," +
+						"\"modificationdate\":\""+ info.date + "\"," +
+						"\"contenttype\":\"" + info.type + "\"," +
 						"\"size\":" + info.length + "," + 
 						"\"folderid\":-1" +
 				    "}" +
@@ -149,4 +168,91 @@ String buildMultipart(String boundary, FileInfo info){
 			  info.content + "\r\n" +
               "--" + boundary + "--";
   return multipart;
+}
+
+String sendMetadata(Session login, FileInfo file){ 
+	WiFiClientSecure client;
+	const char* host = "onemediahub.com";
+	const int httpsPort = 443;
+	if(!client.connect(host, httpsPort)){
+		return "no log";
+	}
+	String url = "/sapi/upload/file?action=save-metadata&validationkey=" + login.key;
+	String body = createMetadata(file);
+	String request = String("POST ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +    
+               "Cookie: JSESSIONID=" + login.jsonid + "\r\n" + 
+               "Content-Type: application/json\r\n" +
+               "Content-Length: " + body.length() + "\r\n" +
+               "\r\n"+
+               
+               body;
+    client.print(request);
+    String line= "";
+	String control = "p";
+	while (client.connected()||(control!=line)) {
+	    control = line;
+	    line += client.readStringUntil('\n');
+	    if (line == "\r") {
+	      break;
+	    }
+	}
+	client.read();
+    return getId(line);
+}
+
+
+String createMetadata(FileInfo info){
+	String metadata;
+	metadata += "{";
+	metadata +=     "\"data\":{";
+	metadata +=         "\"name\":\"" + info.name + "\"," +
+						"\"creationdate\":\""+ info.date + "\"," +
+						"\"modificationdate\":\""+ info.date + "\"," +
+						"\"contenttype\":\"" + info.type + "\"," +
+						"\"size\":" + info.length + "," + 
+						"\"folderid\":-1" +
+				    "}" +
+				"}";
+	return metadata;
+}
+
+String getId(String line){
+	String token = "\"id\":\"";
+	int index = line.indexOf("\"id\":\"" );
+	index += token.length();
+	int endindex = line.indexOf("\"", index);
+	return line.substring(index,endindex); 
+}
+
+int saveFile(Session log, FileInfo file, String Id){
+	WiFiClientSecure client;
+	const char* host = "onemediahub.com";
+	const int httpsPort = 443;
+	if(!client.connect(host, httpsPort)){
+		return WiFi_NOT_CONNECTED;
+	}
+	String url = "/sapi/upload/file?action=save&validationkey=" + log.key;
+	String request = String("POST ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" + 
+			   "x-funambol-id: " + Id + "\r\n" +
+			   "x-funambol-file-size: " + file.content.length() + "\r\n" +
+               "Cookie: JSESSIONID=" + log.jsonid + "\r\n" + 
+               "Content-Type: text/plain\r\n" +
+               "Content-Length: " + file.content.length() + "\r\n" +
+               "\r\n"+
+               
+               file.content;
+    client.print(request);
+    String line= "";
+    String control = "p";
+    while ((control!=line)) {
+	    control = line;
+	    line += client.readStringUntil('\n');
+	    if (line == "\r") {
+	      break;
+	    }
+	}
+    client.read();
+    return getStatusCode(line);
 }
