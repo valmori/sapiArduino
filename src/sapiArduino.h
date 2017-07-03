@@ -40,6 +40,8 @@ int saveFile(Session log, FileInfo file, String Id);
 
 void storageId(String Id);
 
+int dowloadWithId(String Id, FileInfo* file, Session login);
+
 String readId();
 
 #endif

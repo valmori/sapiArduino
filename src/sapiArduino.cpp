@@ -13,6 +13,7 @@ static int getStatusCode(String line);
 static String buildMultipart(String boundary, FileInfo info);
 static String createMetadata(FileInfo info, String Id);
 static String getId(String line);
+static String createGetBody(String Id);
 String sendMetadata(Session login, FileInfo file, String Id);
 int saveFile(Session log, FileInfo file, String Id);
 
@@ -103,6 +104,39 @@ int resumableUploadFile(Session login, FileInfo file){
 		statusCode = saveFile(login, file, Id);
 	}
 	return statusCode;
+}
+
+int dowloadWithId(String Id, FileInfo* file, Session login){
+	WiFiClientSecure client;
+	const char* host = "onemediahub.com";
+	const int httpsPort = 443;
+	if(!client.connect(host, httpsPort)){
+		return WiFi_NOT_CONNECTED;
+	}
+	String body = createGetBody(Id);
+	String url = "/sapi/media?action&validationkey=" + login.key;
+	String request = "GET " + url + " HTTP/1.1\r\n" + 
+	           "Host: " + host + "\r\n" +                     
+	           "Cookie: JSESSIONID=" + login.jsonid + "\r\n" +
+	           "Connection: close\r\n" +
+	           "\r\n"+
+	           
+	           body;
+	client.print(request);
+	Serial.println(request);
+	String line= "";
+	String control = "p";
+	while (client.connected()||(control!=line)) {
+    control = line;
+    line += client.readStringUntil('\n');
+    if (line == "\r") {
+      break;
+    }
+  }
+  client.read();
+  Serial.println("download: ");
+  Serial.println(line);
+  return getStatusCode(line);	
 }
 
 //create the login=username&password=account-infomation
@@ -204,7 +238,6 @@ String sendMetadata(Session login, FileInfo file, String Id){
     return getId(line);
 }
 
-
 String createMetadata(FileInfo info, String Id){
 	String metadata;
 	metadata += "{";
@@ -265,6 +298,21 @@ int saveFile(Session log, FileInfo file, String Id){
     	return 1000;
 	}
     return 0;
+}
+
+String createGetBody(String Id){
+	String request;
+	request += 	    "{";
+	request +=			"\"data\":{";
+	request +=		    "\"ids\":[" + 
+					    	Id +
+ 					    "]," +
+ 					    "\"fields\":[" +
+ 					    	"\"url\"" +
+						 "]" + 
+					  "}"+
+					"}";
+	return request;
 }
 
 void storageId(String Id){
