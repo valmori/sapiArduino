@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include <sapiArduino.h>
-
+#include <EEPROM.h>
 
 
 static String createCred(const char* id, const char* pass);
@@ -189,6 +189,7 @@ String sendMetadata(Session login, FileInfo file, String Id){
                
                body;
     client.print(request);
+    Serial.println(request);
     String line= "";
 	String control = "p";
 	while (client.connected()||(control!=line)) {
@@ -199,6 +200,7 @@ String sendMetadata(Session login, FileInfo file, String Id){
 	    }
 	}
 	client.read();
+	Serial.println(line);
     return getId(line);
 }
 
@@ -238,7 +240,7 @@ int saveFile(Session log, FileInfo file, String Id){
 	String request = String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" + 
 			   "x-funambol-id: " + Id + "\r\n" +
-			   "x-funambol-file-size: " + file.content.length() + "\r\n" +
+			   "x-funambol-file-size:" + file.content.length() + "\r\n" +
                "Cookie: JSESSIONID=" + log.jsonid + "\r\n" + 
                "Content-Type: text/plain\r\n" +
                "Content-Length: " + file.content.length() + "\r\n" +
@@ -247,6 +249,7 @@ int saveFile(Session log, FileInfo file, String Id){
                
                file.content;
     client.print(request);
+    Serial.print(request);
     String line= "";
     String control = "p";
     while ((control!=line)) {
@@ -257,5 +260,24 @@ int saveFile(Session log, FileInfo file, String Id){
 	    }
 	}
     client.read();
+    Serial.print(line);
     return getStatusCode(line);
 }
+
+void storageId(String Id){
+	for(int a = 0; a < Id.length(); a++){
+		EEPROM.write(a, Id[a]);
+	}
+	EEPROM.commit();
+}
+
+String readId(){
+	char Id[20];
+	int a = 0;
+	Id[a] = EEPROM.read(a);
+	while(int(Id[a]) != 0){
+		a++;
+		Id[a] = EEPROM.read(a);
+	}
+	return Id;
+} 

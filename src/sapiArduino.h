@@ -38,4 +38,8 @@ String sendMetadata(Session login, FileInfo file, String Id);
 
 int saveFile(Session log, FileInfo file, String Id);
 
+void storageId(String Id);
+
+String readId();
+
 #endif
