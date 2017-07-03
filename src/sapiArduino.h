@@ -32,9 +32,9 @@ int uploadBuffer(Session login, const char* buffer, long length);
 
 int uploadFile(Session login, FileInfo file);
 
-//int resumableUploadFile(Session login, FileInfo file);
+int resumableUploadFile(Session login, FileInfo file);
 
-String sendMetadata(Session login, FileInfo file);
+String sendMetadata(Session login, FileInfo file, String Id);
 
 int saveFile(Session log, FileInfo file, String Id);
 

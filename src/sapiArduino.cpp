@@ -11,9 +11,9 @@ static String getJsessionid(String line);
 static String getValidationkey(String line);
 static int getStatusCode(String line);
 static String buildMultipart(String boundary, FileInfo info);
-static String createMetadata(FileInfo info);
+static String createMetadata(FileInfo info, String Id);
 static String getId(String line);
-String sendMetadata(Session login, FileInfo file);
+String sendMetadata(Session login, FileInfo file, String Id);
 int saveFile(Session log, FileInfo file, String Id);
 
 //do the login at onemediahub.com, get the jSessionid, validationkey and returns a number code 0, if the login is happened successfully, 1 failed to stabiliz connetion with the host
@@ -95,16 +95,16 @@ int uploadFile(Session login, FileInfo file){
     client.read();
 	return getStatusCode(line);
 }
-/*
+
 int resumableUploadFile(Session login, FileInfo file){  
 	int statusCode;
-	String Id = sentMetadata(login, file);
+	String Id = sendMetadata(login, file, "");
 	if (Id != NULL){
 		statusCode = saveFile(login, file, Id);
 	}
 	return statusCode;
 }
-*/
+
 //create the login=username&password=account-infomation
 static String createCred(const char* id, const char* pass){
   String login="login=";
@@ -170,7 +170,7 @@ String buildMultipart(String boundary, FileInfo info){
   return multipart;
 }
 
-String sendMetadata(Session login, FileInfo file){ 
+String sendMetadata(Session login, FileInfo file, String Id){ 
 	WiFiClientSecure client;
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
@@ -178,12 +178,13 @@ String sendMetadata(Session login, FileInfo file){
 		return "no log";
 	}
 	String url = "/sapi/upload/file?action=save-metadata&validationkey=" + login.key;
-	String body = createMetadata(file);
+	String body = createMetadata(file, Id);
 	String request = String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +    
                "Cookie: JSESSIONID=" + login.jsonid + "\r\n" + 
                "Content-Type: application/json\r\n" +
                "Content-Length: " + body.length() + "\r\n" +
+               "Connection: close" + "\r\n" +
                "\r\n"+
                
                body;
@@ -202,11 +203,12 @@ String sendMetadata(Session login, FileInfo file){
 }
 
 
-String createMetadata(FileInfo info){
+String createMetadata(FileInfo info, String Id){
 	String metadata;
 	metadata += "{";
 	metadata +=     "\"data\":{";
 	metadata +=         "\"name\":\"" + info.name + "\"," +
+						Id +
 						"\"creationdate\":\""+ info.date + "\"," +
 						"\"modificationdate\":\""+ info.date + "\"," +
 						"\"contenttype\":\"" + info.type + "\"," +
@@ -240,6 +242,7 @@ int saveFile(Session log, FileInfo file, String Id){
                "Cookie: JSESSIONID=" + log.jsonid + "\r\n" + 
                "Content-Type: text/plain\r\n" +
                "Content-Length: " + file.content.length() + "\r\n" +
+               "Connection: close" + "\r\n" +
                "\r\n"+
                
                file.content;
