@@ -114,7 +114,7 @@ int dowloadWithId(String Id, FileInfo* file, Session login){
 		return WiFi_NOT_CONNECTED;
 	}
 	String body = createGetBody(Id);
-	String url = "/sapi/media?action&validationkey=" + login.key;
+	String url = "/sapi/media?action=get&validationkey=" + login.key;
 	String request = "GET " + url + " HTTP/1.1\r\n" + 
 	           "Host: " + host + "\r\n" +                     
 	           "Cookie: JSESSIONID=" + login.jsonid + "\r\n" +
@@ -304,9 +304,9 @@ String createGetBody(String Id){
 	String request;
 	request += 	    "{";
 	request +=			"\"data\":{";
-	request +=		    "\"ids\":[" + 
+	request +=		    "\"ids\":[\"" + 
 					    	Id +
- 					    "]," +
+ 					    "\"]," +
  					    "\"fields\":[" +
  					    	"\"url\"" +
 						 "]" + 
