@@ -14,6 +14,7 @@ static String buildMultipart(String boundary, FileInfo info);
 static String createMetadata(FileInfo info, String Id);
 static String getId(String line);
 static String createGetBody(String Id);
+static String getUrl(line);
 String sendMetadata(Session login, FileInfo file, String Id);
 int saveFile(Session log, FileInfo file, String Id);
 
@@ -138,7 +139,24 @@ int dowloadWithId(String Id, FileInfo* file, Session login){
   client.read();
   Serial.println("download: ");
   Serial.println(line);
-  return getStatusCode(line);	
+  return getUrl(line);	
+}
+
+String fileGet(String url){
+	WiFiClientSecure client;
+	String request;
+	const char* host = "onemediahub.com";
+	const int httpsPort = 443;
+	if(!client.connect(host, httpsPort)){
+		return WiFi_NOT_CONNECTED;
+	}
+	request += String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Connection: close\r\n\r\n");
+	client.print(request);
+	Serial.println(request);
+	//<.--------------------------------------------------------------------------------------------------
+	//controllare la risposta come gestirla, cosa contiene, ecc..
 }
 
 //create the login=username&password=account-infomation
@@ -162,6 +180,14 @@ static String getJsessionid(String line){
 static String getValidationkey(String line){
 	String token = "\"validationkey\":\"";
 	int index = line.indexOf("\"validationkey\":\"" );
+	index += token.length();
+	int endindex = line.indexOf("\"", index);
+	return line.substring(index,endindex); 
+}
+
+String getUrl(line){
+	String token = "\"url\":\"";
+	int index = line.indexOf("\"url\":\"" );
 	index += token.length();
 	int endindex = line.indexOf("\"", index);
 	return line.substring(index,endindex); 
