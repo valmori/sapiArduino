@@ -261,15 +261,10 @@ int saveFile(Session log, FileInfo file, String Id){
 	}
     client.read();
     Serial.print(line);
-    int res = getStatusCode(line);
-	if(res == 0){
-		res = line.indexOf("\"MED-1000\":\"" );	
-		if(res){
-			return 1000;
-		}	
-	} else {
-		return res;
+    if(line.indexOf("\"MED-1000\"" )>0){
+    	return 1000;
 	}
+    return 0;
 }
 
 void storageId(String Id){
