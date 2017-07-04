@@ -4,7 +4,7 @@
 enum {
 	LOGIN_OK,
 	AUTENTICATION_FAILED,
-	WiFi_NOT_CONNECTED,
+	SERVER_NOT_CONNECTED,
 	GENERIC_ERROR,
 	JSESSIONID_MISS,
 	AUTENTICATION_KEY_NOT_FOUND,
@@ -40,7 +40,11 @@ int saveFile(Session log, FileInfo file, String Id);
 
 void storageId(String Id);
 
-int dowloadWithId(String Id, FileInfo* file, Session login);
+String fileContent(String line);
+
+String dowloadWithId(String Id, FileInfo* file, Session login);
+
+String fileGet(String url);
 
 String readId();
 

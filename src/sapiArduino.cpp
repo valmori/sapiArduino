@@ -14,7 +14,7 @@ static String buildMultipart(String boundary, FileInfo info);
 static String createMetadata(FileInfo info, String Id);
 static String getId(String line);
 static String createGetBody(String Id);
-static String getUrl(line);
+static String getUrl(String line);
 String sendMetadata(Session login, FileInfo file, String Id);
 int saveFile(Session log, FileInfo file, String Id);
 
@@ -25,7 +25,7 @@ int doLogin(const char* username, const char* password, Session* login){
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_NOT_CONNECTED;
+		return SERVER_NOT_CONNECTED;
 	}
 	String user = createCred(username, password);
 	String url = "/sapi/login?action=login";
@@ -69,7 +69,7 @@ int uploadFile(Session login, FileInfo file){
 	const int httpsPort = 443;
 	WiFiClientSecure client;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_NOT_CONNECTED;
+		return SERVER_NOT_CONNECTED;
 	}	
 	String url = "/sapi/upload?action=save&validationkey=" + login.key;
 	String boundary = "46w9f0apovnw23951faydgi";
@@ -107,12 +107,12 @@ int resumableUploadFile(Session login, FileInfo file){
 	return statusCode;
 }
 
-int dowloadWithId(String Id, FileInfo* file, Session login){
+String dowloadWithId(String Id, FileInfo* file, Session login){
 	WiFiClientSecure client;
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_NOT_CONNECTED;
+		return "no_server_connect";
 	}
 	String body = createGetBody(Id);
 	String url = "/sapi/media?action=get&origin=omh&validationkey=" + login.key;
@@ -130,16 +130,16 @@ int dowloadWithId(String Id, FileInfo* file, Session login){
 	String line= "";
 	String control = "p";
 	while (client.connected()||(control!=line)) {
-    control = line;
-    line += client.readStringUntil('\n');
-    if (line == "\r") {
-      break;
-    }
-  }
-  client.read();
-  Serial.println("download: ");
-  Serial.println(line);
-  return getUrl(line);	
+	    control = line;
+	    line += client.readStringUntil('\n');
+	    if (line == "\r") {
+	      break;
+	    }
+	}
+	client.read();
+	Serial.println("download: ");
+	Serial.println(line);
+	return getUrl(line);	
 }
 
 String fileGet(String url){
@@ -148,15 +148,31 @@ String fileGet(String url){
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_NOT_CONNECTED;
+		return "no_server_connect";
 	}
 	request += String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
-               "Connection: close\r\n\r\n");
+               "Connection: close\r\n\r\n";
 	client.print(request);
 	Serial.println(request);
-	//<.--------------------------------------------------------------------------------------------------
-	//controllare la risposta come gestirla, cosa contiene, ecc..
+	String line= "";
+	String control = "p";
+	while (client.connected()&&(control!=line)) {
+	    control = line;
+	    line += client.readStringUntil('\0');	    
+	}
+    client.read();
+    Serial.print(line);
+    return line;
+}
+
+String fileContent(String line){
+	String content;
+	int a = 0;
+	String token = "Accept-Encoding\r\n";
+	int index = line.indexOf(token);
+	index += token.length();
+	return line.substring(index,line.length());	
 }
 
 //create the login=username&password=account-infomation
@@ -185,7 +201,7 @@ static String getValidationkey(String line){
 	return line.substring(index,endindex); 
 }
 
-String getUrl(line){
+String getUrl(String line){
 	String token = "\"url\":\"";
 	int index = line.indexOf("\"url\":\"" );
 	index += token.length();
@@ -295,7 +311,7 @@ int saveFile(Session log, FileInfo file, String Id){
 	const char* host = "onemediahub.com";
 	const int httpsPort = 443;
 	if(!client.connect(host, httpsPort)){
-		return WiFi_NOT_CONNECTED;
+		return SERVER_NOT_CONNECTED;
 	}
 	String url = "/sapi/upload/file?action=save&validationkey=" + log.key;
 	String request = String("POST ") + url + " HTTP/1.1\r\n" +
