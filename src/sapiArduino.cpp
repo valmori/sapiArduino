@@ -74,7 +74,6 @@ int uploadFile(Session login, FileInfo file){
 	String url = "/sapi/upload?action=save&validationkey=" + login.key;
 	String boundary = "46w9f0apovnw23951faydgi";
 	String body = buildMultipart(boundary,file); 
-	//perché non fare una funzione per la request?
  	String request = String("POST ") + url + " HTTP/1.1\r\n" + //rfc http 1.1
                "Host: " + host + "\r\n" +    
                "Cookie: JSESSIONID=" + login.jsonid + "\r\n" + 
@@ -126,7 +125,6 @@ String dowloadWithId(String Id, FileInfo* file, Session login){
 	           
 	           body;
 	client.print(request);
-	Serial.println(request);
 	String line= "";
 	String control = "p";
 	while (client.connected()||(control!=line)) {
@@ -137,8 +135,6 @@ String dowloadWithId(String Id, FileInfo* file, Session login){
 	    }
 	}
 	client.read();
-	Serial.println("download: ");
-	Serial.println(line);
 	return getUrl(line);	
 }
 
@@ -154,7 +150,6 @@ String fileGet(String url){
                "Host: " + host + "\r\n" +
                "Connection: close\r\n\r\n";
 	client.print(request);
-	Serial.println(request);
 	String line= "";
 	String control = "p";
 	while (client.connected()&&(control!=line)) {
@@ -162,14 +157,13 @@ String fileGet(String url){
 	    line += client.readStringUntil('\0');	    
 	}
     client.read();
-    Serial.print(line);
     return line;
 }
 
 String fileContent(String line){
 	String content;
 	int a = 0;
-	String token = "Accept-Encoding\r\n";
+	String token = "\r\n\r\n";
 	int index = line.indexOf(token);
 	index += token.length();
 	return line.substring(index,line.length());	
